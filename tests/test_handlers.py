@@ -33,10 +33,6 @@ class Fixtures(unittest.TestCase):
 
 
 class TestStdoutHandler(Fixtures):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-
     def setUp(self) -> None:
         self.logger.setLevel(logging.DEBUG)
         self.handler = StdoutHandler()
@@ -73,10 +69,6 @@ class TestStdoutHandler(Fixtures):
 
 
 class TestStderrHandler(Fixtures):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-
     def setUp(self) -> None:
         self.logger.setLevel(logging.DEBUG)
         self.handler = StderrHandler()
