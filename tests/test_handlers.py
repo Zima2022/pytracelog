@@ -6,14 +6,14 @@ from pytracelog.logging.handlers import StdoutHandler, StderrHandler
 
 
 class Fixtures(unittest.TestCase):
-    def setUp(self) -> None:
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
-        self.file = Path('logfile.log')
-        self.file.touch(exist_ok=True)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.logger = logging.getLogger()
+        cls.file = Path('logfile.log')
 
-    def tearDown(self) -> None:
-        file = Path(self.file.name)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        file = Path(cls.file.name)
         file.unlink()
 
     def make_logging_in_file(self, handler: logging.StreamHandler) -> None:
@@ -33,12 +33,13 @@ class Fixtures(unittest.TestCase):
 
 
 class TestStdoutHandler(Fixtures):
-    def setUp(self) -> None:
-        super().setUp()
-        self.handler = StdoutHandler()
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
 
-    def tearDown(self) -> None:
-        super().tearDown()
+    def setUp(self) -> None:
+        self.logger.setLevel(logging.DEBUG)
+        self.handler = StdoutHandler()
 
     def test_init(self):
         self.assertEqual(
@@ -72,12 +73,13 @@ class TestStdoutHandler(Fixtures):
 
 
 class TestStderrHandler(Fixtures):
-    def setUp(self) -> None:
-        super().setUp()
-        self.handler = StderrHandler()
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
 
-    def tearDown(self) -> None:
-        super().tearDown()
+    def setUp(self) -> None:
+        self.logger.setLevel(logging.DEBUG)
+        self.handler = StderrHandler()
 
     def test_init(self):
         self.assertEqual(

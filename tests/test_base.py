@@ -6,10 +6,9 @@ from pytracelog.logging.handlers import StdoutHandler, StderrHandler
 
 
 class TestPyTraceLog(unittest.TestCase):
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
         PyTraceLog.init_root_logger()
-        PyTraceLog.extend_log_record(app_name='my_app')
-        self.log_record = makeLogRecord({'msg': 'LogRecord object'})
 
     def test_init_root_logger(self):
         self.assertTrue(
@@ -34,7 +33,12 @@ class TestPyTraceLog(unittest.TestCase):
         )
 
     def test_extend_log_record(self):
-        self.assertIn('app_name', self.log_record.__dict__)
+        PyTraceLog.extend_log_record(app_name='my_app')
+        self.log_record = makeLogRecord({'msg': 'LogRecord object'})
+        self.assertIn(
+            'app_name', self.log_record.__dict__,
+            'Метод extend_log_record должен добавлять статические атрибуты в объект LogRecord'
+        )
 
 
 if __name__ == '__main__':
