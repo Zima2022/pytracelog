@@ -6,17 +6,28 @@ from pytracelog.logging.handlers import StdoutHandler, StderrHandler
 
 
 class Fixtures(unittest.TestCase):
+    LOG_LEVELS = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+
     @classmethod
     def setUpClass(cls) -> None:
+        """
+        Создание root логгера и адреса для логфайла.
+        """
         cls.logger = logging.getLogger()
         cls.file = Path('logfile.log')
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        file = Path(cls.file.name)
-        file.unlink()
+    def setUp(self) -> None:
+        """
+        Установка уровня логирования root логгера.
+        """
+        self.logger.setLevel(logging.DEBUG)
 
     def make_logging_in_file(self, handler: logging.StreamHandler) -> None:
+        """
+        Подключение обработчика к логгеру,
+        перенаправление потока вывода в логфайл,
+        удаление обработчика из списка обработчиков логгера.
+        """
         with open(self.file, 'w') as file:
             handler.setStream(stream=file)
             self.logger.addHandler(handler)
@@ -28,52 +39,61 @@ class Fixtures(unittest.TestCase):
             self.logger.removeHandler(handler)
 
     def read_from_logfile(self):
+        """
+        Чтение логфайла.
+        """
         with open(self.file) as file:
             return file.read()
 
 
 class TestStdoutHandler(Fixtures):
     def setUp(self) -> None:
-        self.logger.setLevel(logging.DEBUG)
+        """
+        Создание обработчика.
+        """
+        super().setUp()
         self.handler = StdoutHandler()
 
     def test_init(self):
+        """
+        Проверка потока вывода логгера.
+        """
         self.assertEqual(
             self.handler.stream.name, '<stdout>',
             'Обработчик должен выводить логи в <stdout>')
 
     def test_handler_filter(self):
+        """
+        Проверка корректной работы фильтра обработчика.
+        """
         self.make_logging_in_file(self.handler)
         logfile_content = self.read_from_logfile()
 
-        self.assertIn(
-            'DEBUG', logfile_content,
-            'Отсутствуют логи уровня DEBUG. Проверь фильтр обработчика'
-        )
-        self.assertIn(
-            'INFO', logfile_content,
-            'Отсутствуют логи уровня INFO. Проверь фильтр обработчика'
-        )
-        self.assertIn(
-            'WARNING', logfile_content,
-            'Отсутствуют логи уровня WARNING. Проверь фильтр обработчика'
-        )
-        self.assertNotIn(
-            'ERROR', logfile_content,
-            'Фильтр обработчика НЕ должен пропускать логи уровня ERROR'
-        )
-        self.assertNotIn(
-            'CRITICAL', logfile_content,
-            'Фильтр обработчика НЕ должен пропускать логи уровня CRITICAL'
-        )
+        for level in self.LOG_LEVELS[:3]:
+            self.assertIn(
+                level, logfile_content,
+                f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
+            )
+
+        for level in self.LOG_LEVELS[3:]:
+            self.assertNotIn(
+                level, logfile_content,
+                f'Фильтр обработчика НЕ должен пропускать логи уровня {level}'
+            )
 
 
 class TestStderrHandler(Fixtures):
     def setUp(self) -> None:
-        self.logger.setLevel(logging.DEBUG)
+        """
+        Создание обработчика.
+        """
+        super().setUp()
         self.handler = StderrHandler()
 
     def test_init(self):
+        """
+        Проверка потока вывода логгера.
+        """
         self.assertEqual(
             self.handler.stream.name,
             '<stderr>',
@@ -81,29 +101,23 @@ class TestStderrHandler(Fixtures):
         )
 
     def test_handler_filter(self):
+        """
+        Проверка корректной работы фильтра обработчика.
+        """
         self.make_logging_in_file(self.handler)
         logfile_content = self.read_from_logfile()
 
-        self.assertNotIn(
-            'DEBUG', logfile_content,
-            'Фильтр обработчика НЕ должен пропускать логи уровня DEBUG'
-        )
-        self.assertNotIn(
-            'INFO', logfile_content,
-            'Фильтр обработчика НЕ должен пропускать логи уровня INFO'
-        )
-        self.assertNotIn(
-            'WARNING', logfile_content,
-            'Фильтр обработчика НЕ должен пропускать логи уровня WARNING'
-        )
-        self.assertIn(
-            'ERROR', logfile_content,
-            'Отсутствуют логи уровня ERROR. Проверь фильтр обработчика'
-        )
-        self.assertIn(
-            'CRITICAL', logfile_content,
-            'Отсутствуют логи уровня CRITICAL. Проверь фильтр обработчика'
-        )
+        for level in self.LOG_LEVELS[:3]:
+            self.assertNotIn(
+                level, logfile_content,
+                f'Фильтр обработчика НЕ должен пропускать логи уровня {level}'
+            )
+
+        for level in self.LOG_LEVELS[3:]:
+            self.assertIn(
+                level, logfile_content,
+                f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
+            )
 
 
 if __name__ == '__main__':
