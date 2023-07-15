@@ -4,9 +4,10 @@ from pathlib import Path
 
 from pytracelog.logging.handlers import StdoutHandler, StderrHandler
 
+LOG_LEVELS = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+
 
 class Fixtures(unittest.TestCase):
-    LOG_LEVELS = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -15,6 +16,13 @@ class Fixtures(unittest.TestCase):
         """
         cls.logger = logging.getLogger()
         cls.file = Path('logfile.log')
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """
+        Удаление логфайла, использованного для тестирования.
+        """
+        Path.unlink(cls.file)
 
     def setUp(self) -> None:
         """
@@ -69,13 +77,13 @@ class TestStdoutHandler(Fixtures):
         self.make_logging_in_file(self.handler)
         logfile_content = self.read_from_logfile()
 
-        for level in self.LOG_LEVELS[:3]:
+        for level in LOG_LEVELS[:3]:
             self.assertIn(
                 level, logfile_content,
                 f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
             )
 
-        for level in self.LOG_LEVELS[3:]:
+        for level in LOG_LEVELS[3:]:
             self.assertNotIn(
                 level, logfile_content,
                 f'Фильтр обработчика НЕ должен пропускать логи уровня {level}'
@@ -107,13 +115,13 @@ class TestStderrHandler(Fixtures):
         self.make_logging_in_file(self.handler)
         logfile_content = self.read_from_logfile()
 
-        for level in self.LOG_LEVELS[:3]:
+        for level in LOG_LEVELS[:3]:
             self.assertNotIn(
                 level, logfile_content,
                 f'Фильтр обработчика НЕ должен пропускать логи уровня {level}'
             )
 
-        for level in self.LOG_LEVELS[3:]:
+        for level in LOG_LEVELS[3:]:
             self.assertIn(
                 level, logfile_content,
                 f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
