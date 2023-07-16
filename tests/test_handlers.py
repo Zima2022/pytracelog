@@ -2,7 +2,11 @@ import logging
 import unittest
 from pathlib import Path
 
-from pytracelog.logging.handlers import StdoutHandler, StderrHandler
+from pytracelog.logging.handlers import (
+    StdoutHandler,
+    StderrHandler,
+    TracerHandler,
+)
 
 LOG_LEVELS = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
 
@@ -126,6 +130,56 @@ class TestStderrHandler(Fixtures):
                 level, logfile_content,
                 f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
             )
+
+
+class TestTracerHandler(unittest.TestCase):
+    def test_get_record_attrs(self):
+        """
+        Проверка формирования справочника атрибутов записи.
+        """
+        record = logging.makeLogRecord(
+            dict(
+                msg='Test logging message',
+                levelno=logging.ERROR,
+            )
+        )
+
+        attrs = TracerHandler().get_record_attrs(record=record)
+        self.assertTrue(
+            all(attrs.values()),
+            'Удалить ключи с пустыми значениями в справочнике атрибутов записи'
+        )
+
+        attributes_to_delete = (
+            'name',
+            'exc_info',
+            'exc_text',
+            'msecs',
+            'relativeCreated',
+            'otelSpanID',
+            'otelTraceID',
+            'otelServiceName'
+        )
+        for attr in attributes_to_delete:
+            self.assertNotIn(
+                attr, attrs,
+                f'Удалить атрибут {attr} из справочника атрибутов записи'
+            )
+
+        attrs = TracerHandler().get_record_attrs(
+            record=record,
+            remove_msg=False,
+            message_attr_name='some message'
+        )
+        self.assertIn(
+            'some message', attrs,
+            "Отсутствует атрибут 'message_attr_name' в справочнике атрибутов записи"
+        )
+        self.assertEqual(
+            attrs.get('some message'), 'Test logging message',
+            "Если remove_msg=False, атрибут 'msg'" +
+            "переименовывается в соответствии со значением параметра 'message_attr_name'"
+        )
 
 
 if __name__ == '__main__':
