@@ -1,6 +1,7 @@
 import logging
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from pytracelog.logging.handlers import (
     StdoutHandler,
@@ -9,6 +10,7 @@ from pytracelog.logging.handlers import (
 )
 
 LOG_LEVELS = ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+LOGGING_LEVEL = 3
 
 
 class Fixtures(unittest.TestCase):
@@ -72,7 +74,7 @@ class TestStdoutHandler(Fixtures):
         """
         self.assertEqual(
             self.handler.stream.name, '<stdout>',
-            'Обработчик должен выводить логи в <stdout>')
+            'Обработчик НЕ выводить логи в <stdout>')
 
     def test_handler_filter(self):
         """
@@ -81,16 +83,16 @@ class TestStdoutHandler(Fixtures):
         self.make_logging_in_file(self.handler)
         logfile_content = self.read_from_logfile()
 
-        for level in LOG_LEVELS[:3]:
+        for level in LOG_LEVELS[:LOGGING_LEVEL]:
             self.assertIn(
                 level, logfile_content,
                 f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
             )
 
-        for level in LOG_LEVELS[3:]:
+        for level in LOG_LEVELS[LOGGING_LEVEL:]:
             self.assertNotIn(
                 level, logfile_content,
-                f'Фильтр обработчика НЕ должен пропускать логи уровня {level}'
+                f'Фильтр обработчика работает некорректно: пропускать логи уровня {level}'
             )
 
 
@@ -109,7 +111,7 @@ class TestStderrHandler(Fixtures):
         self.assertEqual(
             self.handler.stream.name,
             '<stderr>',
-            'Обработчик должен выводить логи в <stderr>'
+            'Обработчик НЕ выводить логи в <stderr>'
         )
 
     def test_handler_filter(self):
@@ -119,13 +121,13 @@ class TestStderrHandler(Fixtures):
         self.make_logging_in_file(self.handler)
         logfile_content = self.read_from_logfile()
 
-        for level in LOG_LEVELS[:3]:
+        for level in LOG_LEVELS[:LOGGING_LEVEL]:
             self.assertNotIn(
                 level, logfile_content,
-                f'Фильтр обработчика НЕ должен пропускать логи уровня {level}'
+                f'Фильтр обработчика работает некорректно: пропускать логи уровня {level}'
             )
 
-        for level in LOG_LEVELS[3:]:
+        for level in LOG_LEVELS[LOGGING_LEVEL:]:
             self.assertIn(
                 level, logfile_content,
                 f'Отсутствуют логи уровня {level}. Проверь фильтр обработчика'
@@ -133,6 +135,33 @@ class TestStderrHandler(Fixtures):
 
 
 class TestTracerHandler(unittest.TestCase):
+    @patch('pytracelog.logging.handlers.get_current_span')
+    def test_emit(self, span_mock):
+        """
+        Проверка отправки журнала в систему трассировки.
+        """
+        record_warning = logging.makeLogRecord(
+            dict(
+                msg='Test logging message',
+                levelno=logging.WARNING,
+            )
+        )
+        TracerHandler().emit(record=record_warning)
+        span_mock().set_status.assert_not_called()
+
+        record_error = logging.makeLogRecord(
+            dict(
+                msg='Test logging message',
+                levelno=logging.ERROR,
+            )
+        )
+        TracerHandler().emit(record=record_error)
+        span_mock().set_status.assert_called()
+        span_mock().add_event.assert_called_with(
+            name=record_error.msg,
+            attributes=TracerHandler().get_record_attrs(record=record_error)
+        )
+
     def test_get_record_attrs(self):
         """
         Проверка формирования справочника атрибутов записи.
@@ -178,7 +207,7 @@ class TestTracerHandler(unittest.TestCase):
         self.assertEqual(
             attrs.get('some message'), 'Test logging message',
             "Если remove_msg=False, атрибут 'msg'" +
-            "переименовывается в соответствии со значением параметра 'message_attr_name'"
+            "переименовать в соответствии со значением параметра 'message_attr_name'"
         )
 
 

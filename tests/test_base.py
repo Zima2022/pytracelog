@@ -34,15 +34,15 @@ class TestPyTraceLog(unittest.TestCase):
         )
         self.assertTrue(
             root.isEnabledFor(WARNING),
-            'Если не указан уровень логирования, логгер должен регистрировать логи уровня WARNING'
+            'Если не задан уровень логирования, логгер регистрирует логи уровня WARNING'
         )
         self.assertFalse(
             root.isEnabledFor(DEBUG),
-            'Если не указан уровень логирования, логгер НЕ должен регистрировать логи уровня DEBUG'
+            'Если не задан уровень логирования, логгер НЕ регистрирует логи уровня DEBUG'
         )
         self.assertEqual(
             len(root.handlers), 2,
-            'У root логгера должно быть два обработчика'
+            'Проверь: у root логгера два обработчика: StdoutHandler и StderrHandler'
         )
         self.assertTrue(
             any(isinstance(h, StdoutHandler) for h in root.handlers),
@@ -61,7 +61,7 @@ class TestPyTraceLog(unittest.TestCase):
         self.log_record = makeLogRecord({'msg': 'Some message'})
         self.assertIn(
             'app_name', self.log_record.__dict__,
-            'Метод extend_log_record должен добавлять статические атрибуты в объект LogRecord'
+            'Проверь, что метод extend_log_record добавляет статические атрибуты в объект LogRecord'
         )
 
     def test_init_tracer_logger(self):
@@ -95,7 +95,7 @@ class TestPyTraceLog(unittest.TestCase):
         )
         self.assertIsNone(
             PyTraceLog._old_factory,
-            'Надо сбросить настройки фабрики для создания объектов LogRecord'
+            'Сбросить настройки фабрики для создания объектов LogRecord'
         )
 
     @patch.dict('pytracelog.base.environ',
